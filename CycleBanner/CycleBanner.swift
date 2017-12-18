@@ -49,23 +49,12 @@ open class CycleBannerView: UIView {
     private var pageControlWidthConstraint: NSLayoutConstraint?
     private var autoSlideTimer: Timer?
     
-    open var rowSpace: CGFloat = 10
-    open var rowWidth: CGFloat {
-        didSet {
-            if rowWidth == oldValue {
-                return
-            }
-            if rowWidth < width/3 {
-                rowWidth = width/3
-            }
-            if rowWidth > (width-2*rowSpace) {
-                rowWidth = width-2*rowSpace
-            }
-        }
-    }
+    private var rowSpace: CGFloat = 0
+    private var rowWidth: CGFloat = 0
+    
     open var autoSlide = true {
         didSet {
-            autoSlideIfNeed()
+            autoSlideIfNeeded()
         }
     }
     open var isHiddenPageControl: Bool {
@@ -93,23 +82,11 @@ open class CycleBannerView: UIView {
         self.init(.coder(aDecoder))
     }
     
-    open override func layoutSubviews() {
-        super.layoutSubviews()
-        
-        scrollView.contentSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: scrollView.bounds.height)
-        
-        if scrollView.contentOffset == CGPoint.zero {
-            reloadData()
-        }
-    }
-    
     private init(_ initMethod: InitMethod) {
-        rowWidth = width-2*(rowSpace+10)
         scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         pageControl = UIPageControl()
         pageControl.translatesAutoresizingMaskIntoConstraints = false
-        
         switch initMethod {
         case .default:
             super.init(frame: CGRect.zero)
@@ -118,39 +95,39 @@ open class CycleBannerView: UIView {
         case let .frame(frame):
             super.init(frame: frame)
         }
+        rowSpace = 10
+        rowWidth = width-2*(rowSpace+10)
         translatesAutoresizingMaskIntoConstraints = false
-        scrollView.frame = frame
         addSubview(scrollView)
         addSubview(pageControl)
-        
-        setupContentView()
-        setupBottomBar()
+        setupScrollView()
+        setupPageControl()
     }
     
-    private func setupContentView() {
+    private func setupScrollView() {
         scrollView.delegate = self
         scrollView.bounces = false
-        scrollView.isPagingEnabled = false
+        scrollView.isPagingEnabled = true
         scrollView.decelerationRate = 0
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
-        
+        scrollView.layer.masksToBounds = false
         scrollView.topAnchor.constraint(equalTo: topAnchor).isActive = true
         scrollView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-        scrollView.leftAnchor.constraint(equalTo: leftAnchor).isActive = true
-        scrollView.rightAnchor.constraint(equalTo: rightAnchor).isActive = true
+        scrollView.leftAnchor.constraint(equalTo: leftAnchor, constant: itemOutSpace).isActive = true
+        scrollView.rightAnchor.constraint(equalTo: rightAnchor, constant: -itemOutSpace).isActive = true
     }
     
-    private func setupBottomBar() {
+    private func setupPageControl() {
         pageControl.isUserInteractionEnabled = false
         pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControl.size(forNumberOfPages: pageControl.numberOfPages).width)
         pageControlWidthConstraint?.isActive = true
         pageControl.heightAnchor.constraint(equalToConstant: pageControl.bounds.height).isActive = true
-        pageControl.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6).isActive = true
+        pageControl.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10).isActive = true
         pageControl.centerXAnchor.constraint(equalTo: centerXAnchor).isActive = true
     }
     
-    private func autoSlideIfNeed() {
+    private func autoSlideIfNeeded() {
         if autoSlide {
             enableAutoSlide()
         } else {
@@ -177,45 +154,48 @@ open class CycleBannerView: UIView {
         guard pageControl.numberOfPages > 1 else {
             return
         }
-        scrollView.setContentOffset(CGPoint(x: showCellMinX+rowWidth+rowSpace+rowWidth-space, y: scrollView.contentOffset.y), animated: true)
+        scrollView.setContentOffset(CGPoint(x: showCellMinX+2*itemWidth-rowSpace/2, y: scrollView.contentOffset.y), animated: true)
+    }
+    
+    open override func layoutSubviews() {
+        super.layoutSubviews()
+        scrollView.contentSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: scrollView.bounds.height)
+        if scrollView.contentOffset == CGPoint.zero {
+            reloadData()
+        }
     }
     
     open func reloadData() {
         guard let dataSource = dataSource else {
             return
         }
-        
         let numberOfBanners = dataSource.numberOfBanners(in: self)
         guard numberOfBanners > 0 else {
             return
         }
-        
         if pageControl.numberOfPages != numberOfBanners {
             pageControl.numberOfPages = numberOfBanners
             pageControlWidthConstraint?.isActive = false
             pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControl.size(forNumberOfPages: pageControl.numberOfPages).width)
             pageControlWidthConstraint?.isActive = true
         }
-        
         scrollView.isScrollEnabled = pageControl.numberOfPages > 1
         pageControl.currentPage = 0
         
         let currentCell = dataSource.cycleBannerView(self, cellForRowAt: 0)
         setSelectCellClosure(currentCell, index: 0)
-        let currentPoint = initFirstCellPoint
+        let currentPoint = initCellPoint
         currentCell.frame = CGRect(origin: currentPoint, size: CGSize(width: rowWidth, height: bounds.height))
         scrollView.addSubview(currentCell)
         showCellMinX = currentCell.frame.minX
         showCellMaxX = currentCell.frame.maxX
         addCellToShowQueue(currentCell)
-        
-        scrollView.contentOffset = CGPoint(x: currentPoint.x-rowSpace-space, y: currentPoint.y)
+        scrollView.contentOffset = CGPoint(x: currentPoint.x-rowSpace/2, y: currentPoint.y)
         
         guard numberOfBanners > 1 else {
             return
         }
-        
-        let leftPoint = CGPoint(x: currentPoint.x-rowSpace-rowWidth, y: currentPoint.y)
+        let leftPoint = CGPoint(x: currentPoint.x-itemWidth, y: currentPoint.y)
         let leftIndex = getIndexByContentOffset(leftPoint)
         let leftCell = dataSource.cycleBannerView(self, cellForRowAt: leftIndex)
         setSelectCellClosure(leftCell, index: leftIndex)
@@ -224,7 +204,7 @@ open class CycleBannerView: UIView {
         showCellMinX = leftCell.frame.minX
         addCellToShowQueue(leftCell)
         
-        let rightPoint = CGPoint(x: currentPoint.x+rowWidth+rowSpace, y: currentPoint.y)
+        let rightPoint = CGPoint(x: currentPoint.x+itemWidth, y: currentPoint.y)
         let rightIndex = getIndexByContentOffset(rightPoint)
         let rightCell = dataSource.cycleBannerView(self, cellForRowAt: rightIndex)
         setSelectCellClosure(rightCell, index: rightIndex)
@@ -233,30 +213,24 @@ open class CycleBannerView: UIView {
         showCellMaxX = rightCell.frame.maxX
         addCellToShowQueue(rightCell)
         
-        autoSlideIfNeed()
-        
+        autoSlideIfNeeded()
     }
     
-    private let width = UIScreen.main.bounds.width
-    lazy private var space: CGFloat = {
-        _ in
-        return (width-rowWidth-2*rowSpace)/2
-    }(self)
-    lazy private var initFirstCellPoint: CGPoint = {
-        _ in
-        //Int.max
-        return CGPoint(x: space+rowSpace+CGFloat(10000)*CGFloat(pageControl.numberOfPages)*(rowWidth+rowSpace), y: 0)
-    }(self)
-    private lazy var showCellMinX: CGFloat = initFirstCellPoint.x
-    private lazy var showCellMaxX: CGFloat = initFirstCellPoint.x+rowWidth
+    private lazy var width = bounds.width
+    private lazy var space = (width-rowWidth-2*rowSpace)/2
+    private lazy var itemWidth = rowWidth+rowSpace
+    private lazy var itemOutSpace = rowSpace/2+space
+    private lazy var initCellPoint = CGPoint(x: CGFloat(10000)*CGFloat(pageControl.numberOfPages)*itemWidth+rowSpace/2, y: 0)
+    private lazy var showCellMinX = initCellPoint.x
+    private lazy var showCellMaxX = initCellPoint.x+rowWidth
     
     private var isNib = false
     private var reuseCellNibQueue: [String: UINib] = [:]
     private var reuseCellClassQueue: [String: CycleBannerViewCell.Type] = [:]
     
-    // 正在显示的cell
+    // 正在显示的 cell
     private var cellOnShowQueue: [String: [CycleBannerViewCell]] = [:]
-    // 重用池中的cell
+    // 重用池中的 cell
     private var reuseCellQueue: [String: [CycleBannerViewCell]] = [:]
     
     public func register(_ nib: UINib?, forCellReuseIdentifier identifier: String) {
@@ -282,11 +256,11 @@ open class CycleBannerView: UIView {
         if reuseCellQueue[identifier] == nil {
             reuseCellQueue[identifier] = []
         }
-        if let temp = reuseCellQueue[identifier]!.popLast() {
+        if let reuseCell = reuseCellQueue[identifier]!.popLast() {
             // 先从重用池中拿取
-            cell = temp
+            cell = reuseCell
         } else {
-            // 重用池中没有，则根据register方式重新new一个
+            // 重用池中没有，则根据 register 方式重新创建一个
             if isNib {
                 if let nib = reuseCellNibQueue[identifier] {
                     cell = nib.instantiate(withOwner: nil, options: nil)[0] as! CycleBannerViewCell
@@ -305,54 +279,48 @@ open class CycleBannerView: UIView {
         return cell
     }
     
-    /// 在滚动时，如果出现新的空白区域，则从代理中获取相对应的cell来填充视图
-    /// 用户在代理里面会通过 dequeueReusableCell withIdentifier: 方法来获取cell
-    /// 该方法本质是：先根据identifier从重用池中获取cell
-    /// 如果没有，则根据用户register的方式来重新生成一个cell
-    /// 判断左边两边是否多出空白区域，如果多出来，则加载cell，并修改showCellMinX和showCellMaxX
-    fileprivate func coverCellsByContentOffset(_ contentOffset: CGPoint) {
-        
+    /// 在滚动时，如果出现新的空白区域，则从代理中获取相对应的 cell 来填充视图
+    /// 用户在代理里面会通过 dequeueReusableCell withIdentifier: 方法来获取 cell
+    /// 该方法本质是：先根据 identifier 从重用池中获取 cell
+    /// 如果没有，则根据用户 register 的方式来重新生成一个 cell
+    /// 判断左边两边是否多出空白区域，如果多出来，则加载 cell ，并修改 showCellMinX 和 showCellMaxX
+    fileprivate func showCellsByContentOffset(_ contentOffset: CGPoint) {
         guard let dataSource = dataSource else {
             return
         }
-        
-        let screenLeft = contentOffset.x
-        let screenRight = screenLeft + UIScreen.main.bounds.width
-        
+        let screenLeft = contentOffset.x-itemOutSpace
+        let screenRight = screenLeft + width
         if screenLeft < showCellMinX-rowSpace {
-            // 左边多出空白区，加载cell
-            let newLeftCellX = showCellMinX-rowSpace-rowWidth
-            let index = getIndexByContentOffset(CGPoint(x: newLeftCellX, y: initFirstCellPoint.y))
+            // 左边多出空白区，加载 cell
+            let newLeftCellX = showCellMinX-itemWidth
+            let index = getIndexByContentOffset(CGPoint(x: newLeftCellX, y: initCellPoint.y))
             let newLeftCell = dataSource.cycleBannerView(self, cellForRowAt: index)
             setSelectCellClosure(newLeftCell, index: index)
-            newLeftCell.frame = CGRect(origin: CGPoint(x: newLeftCellX, y: initFirstCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
+            newLeftCell.frame = CGRect(origin: CGPoint(x: newLeftCellX, y: initCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
             scrollView.addSubview(newLeftCell)
             addCellToShowQueue(newLeftCell)
-            // 左边多出空白区域并用cell来填充后，设定showCellMinX为新cell的minX
+            // 左边多出空白区域并用 cell 来填充后，设定 showCellMinX 为新 cell 的 minX
             showCellMinX = newLeftCell.frame.minX
         }
-        
         if showCellMaxX+rowSpace < screenRight {
-            // 右边多出空白区，加载cell
+            // 右边多出空白区，加载 cell
             let newRightCellX = showCellMaxX+rowSpace
-            let index = getIndexByContentOffset(CGPoint(x: newRightCellX, y: initFirstCellPoint.y))
+            let index = getIndexByContentOffset(CGPoint(x: newRightCellX, y: initCellPoint.y))
             let newRightCell = dataSource.cycleBannerView(self, cellForRowAt: index)
             setSelectCellClosure(newRightCell, index: index)
-            newRightCell.frame = CGRect(origin: CGPoint(x: newRightCellX, y: initFirstCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
+            newRightCell.frame = CGRect(origin: CGPoint(x: newRightCellX, y: initCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
             scrollView.addSubview(newRightCell)
             addCellToShowQueue(newRightCell)
-            // 右边多出空白区域并用cell来填充后，设定showCellMaxX为新cell的max
+            // 右边多出空白区域并用 cell 来填充后，设定 showCellMaxX 为新 cell 的 max
             showCellMaxX = newRightCell.frame.maxX
         }
-        
     }
     
-    /// 在滚动时，如果有cell滚出屏幕，则把对应的cell从视图中移除，并把该cell实例放入重用池
-    /// 如果有cell被移出视图（肯定是最左边或最右边），则修改showCellMinX和showCellMaxX
+    /// 在滚动时，如果有 cell 滚出屏幕，则把对应的 cell 从视图中移除，并把该 cell 实例放入重用池
+    /// 如果有 cell 被移出视图（肯定是最左边或最右边），则修改 showCellMinX 和 showCellMaxX
     fileprivate func showCellToReuseQueue(_ contentOffset: CGPoint) {
-        let scrollViewMinX = contentOffset.x
-        let scrollViewMaxX = scrollViewMinX+UIScreen.main.bounds.width
-        
+        let scrollViewShowMinX = contentOffset.x-itemOutSpace
+        let scrollViewShowMaxX = scrollViewShowMinX+width+itemOutSpace
         var isModify = false
         for identifier in cellOnShowQueue.keys {
             if let cells =  cellOnShowQueue[identifier] {
@@ -360,7 +328,7 @@ open class CycleBannerView: UIView {
                 for (index, cell) in cells.enumerated() {
                     let minX = cell.frame.minX
                     let maxX = cell.frame.maxX
-                    guard (scrollViewMinX <= minX && minX <= scrollViewMaxX) || (scrollViewMinX <= maxX && maxX <= scrollViewMaxX) else {
+                    guard (scrollViewShowMinX <= minX && minX <= scrollViewShowMaxX) || (scrollViewShowMinX <= maxX && maxX <= scrollViewShowMaxX) else {
                         indexs.append(index)
                         continue
                     }
@@ -376,7 +344,6 @@ open class CycleBannerView: UIView {
                 }
             }
         }
-        
         guard isModify else {
             return
         }
@@ -400,35 +367,19 @@ open class CycleBannerView: UIView {
         }
     }
     
-    /// 实现分页效果
-    fileprivate func pagingByContentOffset(_ contentOffset: CGPoint) {
-        var contentOffsetX = contentOffset.x
-        let offsetInWheel = (contentOffset.x-space-rowSpace).truncatingRemainder(dividingBy: CGFloat(pageControl.numberOfPages)*(rowWidth+rowSpace))
-        let offsetInOneItem = offsetInWheel.truncatingRemainder(dividingBy: rowWidth+rowSpace)
-        
-        if offsetInOneItem < rowWidth/2 {
-            // 仍显示当前cell
-            contentOffsetX = contentOffsetX-offsetInOneItem-rowSpace-space
-        } else {
-            // 显示下一个cell
-            contentOffsetX = contentOffsetX+(rowWidth-offsetInOneItem)-space
-        }
-        scrollView.setContentOffset(CGPoint(x: contentOffsetX, y: initFirstCellPoint.y), animated: true)
-    }
-    
-    /// setContentOffset 到固定页面后，设置底部 pageControl 当前页面
-    fileprivate func scrollViewDidEndScrollingAnimation(_ contentOffset: CGPoint) {
-        let index = getIndexByContentOffset(CGPoint(x: contentOffset.x+space+rowSpace, y: contentOffset.y))
+    /// 停止滚动后，设置底部 pageControl 当前页面
+    fileprivate func setCurrentPageByContentOffset(_ contentOffset: CGPoint) {
+        let index = getIndexByContentOffset(contentOffset)
         pageControl.currentPage = index
     }
     
     /// contentOffset 为经过精确计算的cell的左上角坐标
     private func getIndexByContentOffset(_ contentOffset: CGPoint) -> Int {
-        let offsetInWheel = (contentOffset.x-space-rowSpace).truncatingRemainder(dividingBy: CGFloat(pageControl.numberOfPages)*(rowWidth+rowSpace))
-        // 由于contentOffset是经过精确计算而传过来的值，下面的除法操作，是不会存在余数的情况
-        // 当然index可能达到 pageControl.numberOfPages 值，然而这是不允许的
+        let offsetInWheel = contentOffset.x.truncatingRemainder(dividingBy: CGFloat(pageControl.numberOfPages)*itemWidth)
+        // 由于 contentOffset 是经过精确计算而传过来的值，下面的除法操作，是不会存在余数的情况
+        // 当然 index 可能达到 pageControl.numberOfPages 值，然而这是不允许的
         // 所以 index 需要对 pageControl.numberOfPages 取余
-        var index = Int(offsetInWheel/(rowWidth+rowSpace))
+        var index = Int(offsetInWheel/itemWidth)
         index = index % pageControl.numberOfPages
         return index
     }
@@ -437,9 +388,6 @@ open class CycleBannerView: UIView {
         cell.addGestureRecognizer(UITapGestureRecognizer(target: cell, action: #selector(CycleBannerViewCell.selectAction)))
         cell.selectClosure = {
             self.delegate?.cycleBannerView(self, didSelectRowAt: index)
-            /// 点击会让 setContentOffset animated 方法的动作暂停
-            /// 在每次点击后，主动调用
-            self.scrollViewDidEndDecelerating(self.scrollView)
         }
     }
     
@@ -457,23 +405,16 @@ open class CycleBannerView: UIView {
 extension CycleBannerView: UIScrollViewDelegate {
     
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        coverCellsByContentOffset(scrollView.contentOffset)
+        showCellsByContentOffset(scrollView.contentOffset)
         showCellToReuseQueue(scrollView.contentOffset)
     }
     
-    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        if decelerate {
-            return
-        }
-        pagingByContentOffset(scrollView.contentOffset)
-    }
-    
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        pagingByContentOffset(scrollView.contentOffset)
+        setCurrentPageByContentOffset(scrollView.contentOffset)
     }
     
     public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
-        scrollViewDidEndScrollingAnimation(scrollView.contentOffset)
+        setCurrentPageByContentOffset(scrollView.contentOffset)
     }
     
 }
