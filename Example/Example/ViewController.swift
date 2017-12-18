@@ -16,6 +16,13 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         cycleBannerView.register(UINib(nibName: "CustomCycleBannerViewCell", bundle: nil), forCellReuseIdentifier: "Cell")
+        let space: CGFloat = 10
+        let rowSpace: CGFloat = 10
+        cycleBannerView.rowSpace = rowSpace
+        cycleBannerView.rowWidth = view.bounds.width-2*(space+rowSpace)
+        cycleBannerView.autoSlide = true
+        cycleBannerView.timeInterval = 5
+        cycleBannerView.isHiddenPageControl = true
         cycleBannerView.delegate = self
         cycleBannerView.dataSource = self
         cycleBannerView.reloadData()

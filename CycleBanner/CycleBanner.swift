@@ -49,8 +49,8 @@ open class CycleBannerView: UIView {
     private var pageControlWidthConstraint: NSLayoutConstraint?
     private var autoSlideTimer: Timer?
     
-    private var rowSpace: CGFloat = 0
-    private var rowWidth: CGFloat = 0
+    open var rowSpace: CGFloat = 0
+    open var rowWidth: CGFloat = 0
     
     open var autoSlide = true {
         didSet {
