@@ -22,7 +22,7 @@ class ViewController: UIViewController {
         cycleBannerView.rowWidth = view.bounds.width-2*(space+rowSpace)
         cycleBannerView.autoSlide = true
         cycleBannerView.timeInterval = 5
-        cycleBannerView.isHiddenPageControl = true
+        cycleBannerView.isHiddenPageControl = false
         cycleBannerView.delegate = self
         cycleBannerView.dataSource = self
         cycleBannerView.reloadData()
