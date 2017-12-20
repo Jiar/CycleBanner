@@ -31,11 +31,7 @@ open class CycleBannerViewCell: UIView {
     }
     
 }
-enum InitMethod {
-    case `default`
-    case coder(NSCoder)
-    case frame(CGRect)
-}
+
 open class CycleBannerView: UIView {
     
     enum InitMethod {
@@ -143,7 +139,7 @@ open class CycleBannerView: UIView {
     }
     
     private func disableAutoSlide() {
-        guard !autoSlide, autoSlideTimer != nil else {
+        guard autoSlide, autoSlideTimer != nil else {
             return
         }
         autoSlideTimer?.invalidate()
@@ -169,19 +165,35 @@ open class CycleBannerView: UIView {
         guard let dataSource = dataSource else {
             return
         }
+        disableAutoSlide()
+        
         let numberOfBanners = dataSource.numberOfBanners(in: self)
+        pageControl.numberOfPages = numberOfBanners
+        pageControlWidthConstraint?.isActive = false
+        pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControl.size(forNumberOfPages: pageControl.numberOfPages).width)
+        pageControlWidthConstraint?.isActive = true
+        scrollView.isScrollEnabled = numberOfBanners > 1
+        pageControl.currentPage = 0
+        
+        for identifier in cellOnShowQueue.keys {
+            if let cells =  cellOnShowQueue[identifier] {
+                let indexs = (0 ..< cells.count).sorted(by: >)
+                for index in indexs {
+                    if let cell = cellOnShowQueue[identifier]?.remove(at: index) {
+                        cell.frame.origin = .zero
+                        cell.removeFromSuperview()
+                        if reuseCellQueue[identifier] == nil {
+                            reuseCellQueue[identifier] = []
+                        }
+                        reuseCellQueue[identifier]!.append(cell)
+                    }
+                }
+            }
+        }
+        
         guard numberOfBanners > 0 else {
             return
         }
-        if pageControl.numberOfPages != numberOfBanners {
-            pageControl.numberOfPages = numberOfBanners
-            pageControlWidthConstraint?.isActive = false
-            pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControl.size(forNumberOfPages: pageControl.numberOfPages).width)
-            pageControlWidthConstraint?.isActive = true
-        }
-        scrollView.isScrollEnabled = pageControl.numberOfPages > 1
-        pageControl.currentPage = 0
-        
         let currentCell = dataSource.cycleBannerView(self, cellForRowAt: 0)
         setSelectCellClosure(currentCell, index: 0)
         let currentPoint = initCellPoint
@@ -339,7 +351,10 @@ open class CycleBannerView: UIView {
                     if let cell = cellOnShowQueue[identifier]?.remove(at: index) {
                         cell.frame.origin = .zero
                         cell.removeFromSuperview()
-                        reuseCellQueue[identifier]?.append(cell)
+                        if reuseCellQueue[identifier] == nil {
+                            reuseCellQueue[identifier] = []
+                        }
+                        reuseCellQueue[identifier]!.append(cell)
                     }
                 }
             }
@@ -348,20 +363,20 @@ open class CycleBannerView: UIView {
             return
         }
         // 修改 showCellMinX showCellMaxX
-        _ = cellOnShowQueue.values.map { cells -> Void in
+        for cells in cellOnShowQueue.values {
             guard cells.count > 0 else {
-                return
+                continue
             }
             var minX: CGFloat = cells.first!.frame.minX
             var maxX: CGFloat = cells.first!.frame.maxX
-            _ = cells.map({ cell -> Void in
+            for cell in cells {
                 if cell.frame.minX < minX {
                     minX = cell.frame.minX
                 }
                 if cell.frame.maxX > maxX {
                     maxX = cell.frame.maxX
                 }
-            })
+            }
             showCellMinX = minX
             showCellMaxX = maxX
         }
