@@ -31,6 +31,10 @@ class ViewController: UIViewController {
 
     @IBAction func reloadDataAction(_ sender: Any) {
         cycleBannerCount = random(in: 0...10)
+        let space = CGFloat(random(in: 10...20))
+        let rowSpace = CGFloat(random(in: 10...20))
+        cycleBannerView.rowSpace = rowSpace
+        cycleBannerView.rowWidth = view.bounds.width-2*(space+rowSpace)
         cycleBannerView.reloadData()
     }
     
