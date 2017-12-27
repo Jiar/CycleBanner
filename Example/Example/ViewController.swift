@@ -21,16 +21,20 @@ class ViewController: UIViewController {
         let rowSpace: CGFloat = 10
         cycleBannerView.rowSpace = rowSpace
         cycleBannerView.rowWidth = view.bounds.width-2*(space+rowSpace)
-        cycleBannerView.autoSlide = true
         cycleBannerView.timeInterval = 3
+        cycleBannerView.autoSlide = true
         cycleBannerView.isHiddenPageControl = false
         cycleBannerView.delegate = self
         cycleBannerView.dataSource = self
         cycleBannerView.reloadData()
     }
 
-    @IBAction func reloadDataAction(_ sender: Any) {
+    @IBAction func randomCountAction(_ sender: Any) {
         cycleBannerCount = random(in: 0...10)
+        cycleBannerView.reloadData()
+    }
+    
+    @IBAction func randomWidthAndSpaceAction(_ sender: Any) {
         let space = CGFloat(random(in: 10...20))
         let rowSpace = CGFloat(random(in: 10...20))
         cycleBannerView.rowSpace = rowSpace

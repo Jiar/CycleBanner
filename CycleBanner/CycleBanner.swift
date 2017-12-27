@@ -207,6 +207,7 @@ open class CycleBannerView: UIView {
         pageControlWidthConstraint?.isActive = true
         scrollView.isScrollEnabled = numberOfBanners > 1
         pageControl.currentPage = 0
+        layoutIfNeeded()
         
         for identifier in cellOnShowQueue.keys {
             if let cells =  cellOnShowQueue[identifier] {
@@ -214,7 +215,6 @@ open class CycleBannerView: UIView {
                 for index in indexs {
                     if let cell = cellOnShowQueue[identifier]?.remove(at: index) {
                         cell.frame.origin = .zero
-                        scrollView.willRemoveSubview(cell)
                         cell.removeFromSuperview()
                         if reuseCellQueue[identifier] == nil {
                             reuseCellQueue[identifier] = []
@@ -224,20 +224,19 @@ open class CycleBannerView: UIView {
                 }
             }
         }
-        layoutIfNeeded()
         
         guard numberOfBanners > 0 else {
             return
         }
+        let currentPoint = initCellPoint()
+        scrollView.contentOffset = CGPoint(x: currentPoint.x-_rowSpace/2, y: currentPoint.y)
         let currentCell = dataSource.cycleBannerView(self, cellForRowAt: 0)
         setSelectCellClosure(currentCell, index: 0)
-        let currentPoint = initCellPoint()
         currentCell.frame = CGRect(origin: currentPoint, size: CGSize(width: _rowWidth, height: bounds.height))
         scrollView.addSubview(currentCell)
         showCellMinX = currentCell.frame.minX
         showCellMaxX = currentCell.frame.maxX
         addCellToShowQueue(currentCell)
-        scrollView.contentOffset = CGPoint(x: currentPoint.x-_rowSpace/2, y: currentPoint.y)
         
         guard numberOfBanners > 1 else {
             return
