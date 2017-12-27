@@ -34,17 +34,19 @@ open class CycleBannerViewCell: UIView {
 
 open class CycleBannerView: UIView {
     
-    /// When it is reset, reloadData() method must be called
-    open var rowSpace: CGFloat = 0
-    /// When it is reset, reloadData() method must be called
+    /// the width for every item
+    /// when it is reset, reloadData() method must be called
     open var rowWidth: CGFloat = 0
-    /// Whether to enable automatic scrolling
+    /// the space between items
+    /// when it is reset, reloadData() method must be called
+    open var rowSpace: CGFloat = 0
+    /// whether to enable automatic scrolling, default is true
     open var autoSlide = true {
         didSet {
             autoSlideIfNeeded()
         }
     }
-    /// Whether to Hide the bottom pageControl display
+    /// whether to hide the bottom pageControl display, default is false
     open var isHiddenPageControl: Bool {
         get {
             return pageControl.isHidden
@@ -53,8 +55,8 @@ open class CycleBannerView: UIView {
             pageControl.isHidden = newValue
         }
     }
-    /// Automatic scrolling time interval
-    /// It must be set before the autoSlide property is set to true
+    /// automatic scrolling time interval, default is 5
+    /// it must be set before the autoSlide property is set to true
     open var timeInterval: TimeInterval = 5
     
     open weak var delegate: CycleBannerViewDelegate?
