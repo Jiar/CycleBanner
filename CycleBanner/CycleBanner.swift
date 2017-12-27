@@ -104,7 +104,7 @@ open class CycleBannerView: UIView {
             super.init(frame: frame)
         }
         rowSpace = 10
-        rowWidth = width()-2*(_rowSpace+10)
+        rowWidth = width()-2*(rowSpace+10)
         _rowSpace = rowSpace
         _rowWidth = rowWidth
         translatesAutoresizingMaskIntoConstraints = false
