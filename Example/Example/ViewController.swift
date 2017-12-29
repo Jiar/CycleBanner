@@ -39,7 +39,6 @@ class ViewController: UIViewController {
         let rowSpace = CGFloat(random(in: 10...20))
         cycleBannerView.rowSpace = rowSpace
         cycleBannerView.rowWidth = view.bounds.width-2*(space+rowSpace)
-        cycleBannerView.reloadData()
     }
     
     func random(in range: CountableClosedRange<Int>) -> Int {

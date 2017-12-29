@@ -35,11 +35,19 @@ open class CycleBannerViewCell: UIView {
 open class CycleBannerView: UIView {
     
     /// the width for every item
-    /// when it is reset, reloadData() method must be called
-    open var rowWidth: CGFloat = 0
+    /// modifying this value automatically invokes the reloadData() method
+    open var rowWidth: CGFloat = 0 {
+        didSet {
+            reloadData()
+        }
+    }
     /// the space between items
-    /// when it is reset, reloadData() method must be called
-    open var rowSpace: CGFloat = 0
+    /// modifying this value automatically invokes the reloadData() method
+    open var rowSpace: CGFloat = 0 {
+        didSet {
+            reloadData()
+        }
+    }
     /// whether to enable automatic scrolling, default is true
     open var autoSlide = true {
         didSet {
@@ -75,8 +83,7 @@ open class CycleBannerView: UIView {
     private var scrollViewRightConstraint: NSLayoutConstraint?
     private var autoSlideTimer: Timer?
     
-    private var _rowSpace: CGFloat = 0
-    private var _rowWidth: CGFloat = 0
+    private var hasInit = false
     
     public convenience init() {
         self.init(.default)
@@ -104,14 +111,13 @@ open class CycleBannerView: UIView {
             super.init(frame: frame)
         }
         rowSpace = 10
-        rowWidth = width()-2*(rowSpace+10)
-        _rowSpace = rowSpace
-        _rowWidth = rowWidth
+        rowWidth = width-2*(rowSpace+10)
         translatesAutoresizingMaskIntoConstraints = false
         addSubview(scrollView)
         addSubview(pageControl)
         setupScrollView()
         setupPageControl()
+        hasInit = true
     }
     
     private func setupScrollView() {
@@ -124,8 +130,8 @@ open class CycleBannerView: UIView {
         scrollView.layer.masksToBounds = false
         scrollView.topAnchor.constraint(equalTo: topAnchor).isActive = true
         scrollView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-        scrollViewLeftConstraint = scrollView.leftAnchor.constraint(equalTo: leftAnchor, constant: itemOutSpace())
-        scrollViewRightConstraint = scrollView.rightAnchor.constraint(equalTo: rightAnchor, constant: -itemOutSpace())
+        scrollViewLeftConstraint = scrollView.leftAnchor.constraint(equalTo: leftAnchor, constant: itemOutSpace)
+        scrollViewRightConstraint = scrollView.rightAnchor.constraint(equalTo: rightAnchor, constant: -itemOutSpace)
         scrollViewLeftConstraint!.isActive = true
         scrollViewRightConstraint!.isActive = true
     }
@@ -133,8 +139,8 @@ open class CycleBannerView: UIView {
     private func setupPageControl() {
         pageControl.isUserInteractionEnabled = false
         var pageControlWidth = pageControl.size(forNumberOfPages: pageControl.numberOfPages).width
-        if pageControlWidth > width() {
-            pageControlWidth = width()
+        if pageControlWidth > width {
+            pageControlWidth = width
         }
         pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControlWidth)
         pageControlWidthConstraint?.isActive = true
@@ -170,7 +176,7 @@ open class CycleBannerView: UIView {
         guard pageControl.numberOfPages > 1 else {
             return
         }
-        scrollView.setContentOffset(CGPoint(x: showCellMinX+2*itemWidth()-_rowSpace/2, y: scrollView.contentOffset.y), animated: true)
+        scrollView.setContentOffset(CGPoint(x: showCellMinX+2*itemWidth-rowSpace/2, y: scrollView.contentOffset.y), animated: true)
     }
     
     open override func layoutSubviews() {
@@ -182,17 +188,15 @@ open class CycleBannerView: UIView {
     }
     
     open func reloadData() {
-        guard let dataSource = dataSource else {
+        guard hasInit, let dataSource = dataSource else {
             return
         }
         disableAutoSlide()
         
-        _rowSpace = rowSpace
-        _rowWidth = rowWidth
         scrollViewLeftConstraint?.isActive = false
         scrollViewRightConstraint?.isActive = false
-        scrollViewLeftConstraint = scrollView.leftAnchor.constraint(equalTo: leftAnchor, constant: itemOutSpace())
-        scrollViewRightConstraint = scrollView.rightAnchor.constraint(equalTo: rightAnchor, constant: -itemOutSpace())
+        scrollViewLeftConstraint = scrollView.leftAnchor.constraint(equalTo: leftAnchor, constant: itemOutSpace)
+        scrollViewRightConstraint = scrollView.rightAnchor.constraint(equalTo: rightAnchor, constant: -itemOutSpace)
         scrollViewLeftConstraint!.isActive = true
         scrollViewRightConstraint!.isActive = true
         
@@ -200,8 +204,8 @@ open class CycleBannerView: UIView {
         pageControl.numberOfPages = numberOfBanners
         pageControlWidthConstraint?.isActive = false
         var pageControlWidth = pageControl.size(forNumberOfPages: pageControl.numberOfPages).width
-        if pageControlWidth > width() {
-            pageControlWidth = width()
+        if pageControlWidth > width {
+            pageControlWidth = width
         }
         pageControlWidthConstraint = pageControl.widthAnchor.constraint(equalToConstant: pageControlWidth)
         pageControlWidthConstraint?.isActive = true
@@ -228,11 +232,11 @@ open class CycleBannerView: UIView {
         guard numberOfBanners > 0 else {
             return
         }
-        let currentPoint = initCellPoint()
-        scrollView.contentOffset = CGPoint(x: currentPoint.x-_rowSpace/2, y: currentPoint.y)
+        let currentPoint = initCellPoint
+        scrollView.contentOffset = CGPoint(x: currentPoint.x-rowSpace/2, y: currentPoint.y)
         let currentCell = dataSource.cycleBannerView(self, cellForRowAt: 0)
         setSelectCellClosure(currentCell, index: 0)
-        currentCell.frame = CGRect(origin: currentPoint, size: CGSize(width: _rowWidth, height: bounds.height))
+        currentCell.frame = CGRect(origin: currentPoint, size: CGSize(width: rowWidth, height: bounds.height))
         scrollView.addSubview(currentCell)
         showCellMinX = currentCell.frame.minX
         showCellMaxX = currentCell.frame.maxX
@@ -241,20 +245,20 @@ open class CycleBannerView: UIView {
         guard numberOfBanners > 1 else {
             return
         }
-        let leftPoint = CGPoint(x: currentPoint.x-itemWidth(), y: currentPoint.y)
+        let leftPoint = CGPoint(x: currentPoint.x-itemWidth, y: currentPoint.y)
         let leftIndex = getIndexByContentOffset(leftPoint)
         let leftCell = dataSource.cycleBannerView(self, cellForRowAt: leftIndex)
         setSelectCellClosure(leftCell, index: leftIndex)
-        leftCell.frame = CGRect(origin: leftPoint, size: CGSize(width: _rowWidth, height: bounds.height))
+        leftCell.frame = CGRect(origin: leftPoint, size: CGSize(width: rowWidth, height: bounds.height))
         scrollView.addSubview(leftCell)
         showCellMinX = leftCell.frame.minX
         addCellToShowQueue(leftCell)
         
-        let rightPoint = CGPoint(x: currentPoint.x+itemWidth(), y: currentPoint.y)
+        let rightPoint = CGPoint(x: currentPoint.x+itemWidth, y: currentPoint.y)
         let rightIndex = getIndexByContentOffset(rightPoint)
         let rightCell = dataSource.cycleBannerView(self, cellForRowAt: rightIndex)
         setSelectCellClosure(rightCell, index: rightIndex)
-        rightCell.frame = CGRect(origin: rightPoint, size: CGSize(width: _rowWidth, height: bounds.height))
+        rightCell.frame = CGRect(origin: rightPoint, size: CGSize(width: rowWidth, height: bounds.height))
         scrollView.addSubview(rightCell)
         showCellMaxX = rightCell.frame.maxX
         addCellToShowQueue(rightCell)
@@ -262,20 +266,20 @@ open class CycleBannerView: UIView {
         autoSlideIfNeeded()
     }
     
-    private func width() -> CGFloat {
+    private var width: CGFloat {
         return bounds.width
     }
-    private func space() -> CGFloat {
-        return (width()-_rowWidth-2*_rowSpace)/2
+    private var space: CGFloat {
+        return (width-rowWidth-2*rowSpace)/2
     }
-    private func itemWidth() -> CGFloat {
-        return _rowWidth+_rowSpace
+    private var itemWidth: CGFloat {
+        return rowWidth+rowSpace
     }
-    private func itemOutSpace() -> CGFloat {
-        return _rowSpace/2+space()
+    private var itemOutSpace: CGFloat {
+        return rowSpace/2+space
     }
-    private func initCellPoint() -> CGPoint {
-        return CGPoint(x: CGFloat(10000)*CGFloat(pageControl.numberOfPages)*itemWidth()+_rowSpace/2, y: 0)
+    private var initCellPoint: CGPoint {
+        return CGPoint(x: CGFloat(10000)*CGFloat(pageControl.numberOfPages)*itemWidth+rowSpace/2, y: 0)
     }
     private var showCellMinX: CGFloat = 0
     private var showCellMaxX: CGFloat = 0
@@ -334,24 +338,24 @@ open class CycleBannerView: UIView {
         guard let dataSource = dataSource else {
             return
         }
-        let screenLeft = contentOffset.x-itemOutSpace()
-        let screenRight = screenLeft + width()
-        if screenLeft < showCellMinX-_rowSpace {
-            let newLeftCellX = showCellMinX-itemWidth()
-            let index = getIndexByContentOffset(CGPoint(x: newLeftCellX, y: initCellPoint().y))
+        let screenLeft = contentOffset.x-itemOutSpace
+        let screenRight = screenLeft + width
+        if screenLeft < showCellMinX-rowSpace {
+            let newLeftCellX = showCellMinX-itemWidth
+            let index = getIndexByContentOffset(CGPoint(x: newLeftCellX, y: initCellPoint.y))
             let newLeftCell = dataSource.cycleBannerView(self, cellForRowAt: index)
             setSelectCellClosure(newLeftCell, index: index)
-            newLeftCell.frame = CGRect(origin: CGPoint(x: newLeftCellX, y: initCellPoint().y), size: CGSize(width: _rowWidth, height: bounds.height))
+            newLeftCell.frame = CGRect(origin: CGPoint(x: newLeftCellX, y: initCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
             scrollView.addSubview(newLeftCell)
             addCellToShowQueue(newLeftCell)
             showCellMinX = newLeftCell.frame.minX
         }
-        if showCellMaxX+_rowSpace < screenRight {
-            let newRightCellX = showCellMaxX+_rowSpace
-            let index = getIndexByContentOffset(CGPoint(x: newRightCellX, y: initCellPoint().y))
+        if showCellMaxX+rowSpace < screenRight {
+            let newRightCellX = showCellMaxX+rowSpace
+            let index = getIndexByContentOffset(CGPoint(x: newRightCellX, y: initCellPoint.y))
             let newRightCell = dataSource.cycleBannerView(self, cellForRowAt: index)
             setSelectCellClosure(newRightCell, index: index)
-            newRightCell.frame = CGRect(origin: CGPoint(x: newRightCellX, y: initCellPoint().y), size: CGSize(width: _rowWidth, height: bounds.height))
+            newRightCell.frame = CGRect(origin: CGPoint(x: newRightCellX, y: initCellPoint.y), size: CGSize(width: rowWidth, height: bounds.height))
             scrollView.addSubview(newRightCell)
             addCellToShowQueue(newRightCell)
             showCellMaxX = newRightCell.frame.maxX
@@ -359,8 +363,8 @@ open class CycleBannerView: UIView {
     }
     
     fileprivate func showCellToReuseQueue(_ contentOffset: CGPoint) {
-        let scrollViewShowMinX = contentOffset.x-itemOutSpace()
-        let scrollViewShowMaxX = scrollViewShowMinX+width()+itemOutSpace()
+        let scrollViewShowMinX = contentOffset.x-itemOutSpace
+        let scrollViewShowMaxX = scrollViewShowMinX+width+itemOutSpace
         var isModify = false
         for identifier in cellOnShowQueue.keys {
             if let cells =  cellOnShowQueue[identifier] {
@@ -415,8 +419,8 @@ open class CycleBannerView: UIView {
     }
     
     private func getIndexByContentOffset(_ contentOffset: CGPoint) -> Int {
-        let offsetInWheel = contentOffset.x.truncatingRemainder(dividingBy: CGFloat(pageControl.numberOfPages)*itemWidth())
-        var index = Int(offsetInWheel/itemWidth())
+        let offsetInWheel = contentOffset.x.truncatingRemainder(dividingBy: CGFloat(pageControl.numberOfPages)*itemWidth)
+        var index = Int(offsetInWheel/itemWidth)
         index = index % pageControl.numberOfPages
         return index
     }
