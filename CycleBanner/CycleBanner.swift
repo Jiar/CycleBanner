@@ -182,9 +182,6 @@ open class CycleBannerView: UIView {
     open override func layoutSubviews() {
         super.layoutSubviews()
         scrollView.contentSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: scrollView.bounds.height)
-        if scrollView.contentOffset == CGPoint.zero {
-            reloadData()
-        }
     }
     
     open func reloadData() {
