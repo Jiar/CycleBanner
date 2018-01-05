@@ -336,7 +336,7 @@ open class CycleBannerView: UIView {
             return
         }
         let screenLeft = contentOffset.x-itemOutSpace
-        let screenRight = screenLeft + width
+        let screenRight = screenLeft+width+itemOutSpace
         if screenLeft < showCellMinX-rowSpace {
             let newLeftCellX = showCellMinX-itemWidth
             let index = getIndexByContentOffset(CGPoint(x: newLeftCellX, y: initCellPoint.y))
@@ -360,8 +360,8 @@ open class CycleBannerView: UIView {
     }
     
     fileprivate func showCellToReuseQueue(_ contentOffset: CGPoint) {
-        let scrollViewShowMinX = contentOffset.x-itemOutSpace
-        let scrollViewShowMaxX = scrollViewShowMinX+width+itemOutSpace
+        let screenLeft = contentOffset.x-itemOutSpace
+        let screenRight = screenLeft+width+itemOutSpace
         var isModify = false
         for identifier in cellOnShowQueue.keys {
             if let cells =  cellOnShowQueue[identifier] {
@@ -369,7 +369,7 @@ open class CycleBannerView: UIView {
                 for (index, cell) in cells.enumerated() {
                     let minX = cell.frame.minX
                     let maxX = cell.frame.maxX
-                    guard (scrollViewShowMinX <= minX && minX <= scrollViewShowMaxX) || (scrollViewShowMinX <= maxX && maxX <= scrollViewShowMaxX) else {
+                    guard (screenLeft <= minX && minX <= screenRight) || (screenLeft <= maxX && maxX <= screenRight) else {
                         indexs.append(index)
                         continue
                     }
