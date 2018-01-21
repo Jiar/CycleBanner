@@ -38,6 +38,7 @@ open class CycleBannerView: UIView {
     /// modifying this value automatically invokes the reloadData() method
     open var rowWidth: CGFloat = 0 {
         didSet {
+            rowWidth.round()
             reloadData()
         }
     }
@@ -45,6 +46,7 @@ open class CycleBannerView: UIView {
     /// modifying this value automatically invokes the reloadData() method
     open var rowSpace: CGFloat = 0 {
         didSet {
+            rowSpace.round()
             reloadData()
         }
     }
