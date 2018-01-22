@@ -1,7 +1,11 @@
 # CycleBanner
 Infinite horizontal scrolling control.
 
-![CycleBanner_Main](https://github.com/Jiar/CycleBanner/blob/master/Screenshot/CycleBanner_Main.gif?raw=true)
+<p align="center">
+
+<img src="https://github.com/Jiar/CycleBanner/blob/master/Screenshot/CycleBanner_Main.gif?raw=true" alt="CycleBanner" title="CycleBanner"/>
+
+</p>
 
 ## Requirements
 
